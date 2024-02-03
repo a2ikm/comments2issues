@@ -1,5 +1,10 @@
 use std::{env, process};
 
+#[derive(serde::Deserialize)]
+struct Comment {
+    body: String,
+}
+
 fn main() {
     let token = env::var("GITHUB_TOKEN").unwrap_or_else(|_e| {
         eprintln!("GITHUB_TOKEN environment variable is not set");
@@ -50,5 +55,13 @@ fn main() {
         process::exit(1);
     });
 
-    println!("{}", response.text().unwrap());
+    let mut comments: Vec<Comment> = serde_json::from_str(response.text().unwrap().as_str())
+        .unwrap_or_else(|_e| {
+            eprintln!("Failed to parse JSON response");
+            process::exit(1);
+        });
+
+    for comment in comments.iter_mut() {
+        println!("{}", comment.body);
+    }
 }
