@@ -1,4 +1,4 @@
-use std::{env, process};
+use std::env;
 
 pub struct Client {
     owner: String,
@@ -19,7 +19,12 @@ pub struct Issue {
 }
 
 impl Client {
-    pub fn new(token: &str, owner: String, repo: String, issue_number: String) -> Client {
+    pub fn new(
+        token: &str,
+        owner: String,
+        repo: String,
+        issue_number: String,
+    ) -> Result<Client, &'static str> {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             "Accept",
@@ -37,7 +42,7 @@ impl Client {
             reqwest::header::HeaderValue::from_str("2022-11-28").unwrap(),
         );
 
-        let client = reqwest::blocking::ClientBuilder::new()
+        let Ok(client) = reqwest::blocking::ClientBuilder::new()
             .user_agent(concat!(
                 env!("CARGO_PKG_NAME"),
                 "/",
@@ -45,49 +50,40 @@ impl Client {
             ))
             .default_headers(headers)
             .build()
-            .unwrap_or_else(|_e| {
-                eprintln!("Failed to build client");
-                process::exit(1);
-            });
+        else {
+            return Err("Failed to build client".into());
+        };
 
-        Client {
+        Ok(Client {
             owner,
             repo,
             issue_number,
             client,
-        }
+        })
     }
 
-    pub fn get_comments(&self) -> Vec<Comment> {
+    pub fn get_comments(&self) -> Result<Vec<Comment>, &'static str> {
         let url = reqwest::Url::parse(&self.comments_api_url()).unwrap();
-        let response = self.client.get(url).send().unwrap_or_else(|_e| {
-            eprintln!("Failed to get the issue");
-            process::exit(1);
-        });
+        let Ok(response) = self.client.get(url).send() else {
+            return Err("Failed to get the issue");
+        };
 
         let json = response.text().unwrap();
-        let comments: Vec<Comment> = serde_json::from_str(&json).unwrap_or_else(|_e| {
-            eprintln!("Failed to parse JSON response");
-            process::exit(1);
-        });
+        let Ok(comments): Result<Vec<Comment>, serde_json::Error> = serde_json::from_str(&json)
+        else {
+            return Err("Failed to parse JSON response");
+        };
 
-        comments
+        Ok(comments)
     }
 
-    pub fn create_issue(&self, issue: Issue) {
+    pub fn create_issue(
+        &self,
+        issue: Issue,
+    ) -> Result<reqwest::blocking::Response, reqwest::Error> {
         let url = reqwest::Url::parse(&self.issues_api_url()).unwrap();
 
-        let response = self
-            .client
-            .post(url)
-            .json(&issue)
-            .send()
-            .unwrap_or_else(|_e| {
-                eprintln!("Failed to create a new issue");
-                process::exit(1);
-            });
-
-        println!("{}", response.status().as_str());
+        self.client.post(url).json(&issue).send()
     }
 
     fn comments_api_url(&self) -> String {

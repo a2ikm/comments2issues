@@ -2,7 +2,8 @@ mod client;
 mod source;
 
 use clap::Parser;
-use std::{env, process};
+use std::env;
+use std::error::Error;
 
 #[derive(clap::Parser, Debug)]
 #[command()]
@@ -11,23 +12,22 @@ struct Args {
     issue_url: String,
 }
 
-fn main() {
-    let token = env::var("GITHUB_TOKEN").unwrap_or_else(|_e| {
-        eprintln!("GITHUB_TOKEN environment variable is not set");
-        process::exit(1);
-    });
+fn main() -> Result<(), Box<dyn Error>> {
+    let Ok(token) = env::var("GITHUB_TOKEN") else {
+        return Err("GITHUB_TOKEN environment variable is not set".into());
+    };
 
     let args = Args::parse();
-    let source_issue = source::SourceIssue::parse(&args.issue_url);
+    let source_issue = source::SourceIssue::parse(&args.issue_url)?;
 
     let client = client::Client::new(
         &token,
         source_issue.owner,
         source_issue.repo,
         source_issue.issue_number,
-    );
+    )?;
 
-    let mut comments = client.get_comments();
+    let mut comments = client.get_comments()?;
 
     println!("number of comments: {}", comments.len());
 
@@ -39,6 +39,11 @@ fn main() {
             body: comment.body.clone(),
         };
 
-        client.create_issue(issue);
+        match client.create_issue(issue) {
+            Ok(response) => println!("{}", response.status().as_str()),
+            Err(e) => println!("{}", e),
+        }
     }
+
+    Ok(())
 }
