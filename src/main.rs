@@ -1,6 +1,14 @@
 mod client;
 
+use clap::Parser;
 use std::{env, process};
+
+#[derive(clap::Parser, Debug)]
+#[command()]
+struct Args {
+    /// Source issue URL
+    issue_url: String,
+}
 
 fn main() {
     let token = env::var("GITHUB_TOKEN").unwrap_or_else(|_e| {
@@ -8,12 +16,13 @@ fn main() {
         process::exit(1);
     });
 
-    let issue_url = "https://github.com/a2ikm/comments2issues/issues/2";
+    let args = Args::parse();
+
     let re = regex::Regex::new(
         r"https://github.com/(?<owner>[-a-zA-Z0-9]+)/(?<repo>[-_.a-zA-Z0-9]+)/issues/(?<issue_number>\d+)",
     )
     .unwrap();
-    let Some(caps) = re.captures(issue_url) else {
+    let Some(caps) = re.captures(&args.issue_url) else {
         eprintln!("Given issue url is not correct");
         process::exit(1);
     };
