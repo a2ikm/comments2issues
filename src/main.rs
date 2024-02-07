@@ -1,4 +1,5 @@
 mod client;
+mod source;
 
 use clap::Parser;
 use std::{env, process};
@@ -17,33 +18,13 @@ fn main() {
     });
 
     let args = Args::parse();
-
-    let re = regex::Regex::new(
-        r"https://github.com/(?<owner>[-a-zA-Z0-9]+)/(?<repo>[-_.a-zA-Z0-9]+)/issues/(?<issue_number>\d+)",
-    )
-    .unwrap();
-    let Some(caps) = re.captures(&args.issue_url) else {
-        eprintln!("Given issue url is not correct");
-        process::exit(1);
-    };
-    let Some(owner_match) = caps.name("owner") else {
-        eprintln!("Given issue url doesn't contain owner");
-        process::exit(1);
-    };
-    let Some(repo_match) = caps.name("repo") else {
-        eprintln!("Given issue url doesn't contain repo");
-        process::exit(1);
-    };
-    let Some(issue_number_match) = caps.name("issue_number") else {
-        eprintln!("Given issue url doesn't contain issue_number");
-        process::exit(1);
-    };
+    let source_issue = source::SourceIssue::parse(&args.issue_url);
 
     let client = client::Client::new(
         &token,
-        owner_match.as_str(),
-        repo_match.as_str(),
-        issue_number_match.as_str(),
+        source_issue.owner,
+        source_issue.repo,
+        source_issue.issue_number,
     );
 
     let mut comments = client.get_comments();

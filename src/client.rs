@@ -19,7 +19,7 @@ pub struct Issue {
 }
 
 impl Client {
-    pub fn new(token: &str, owner: &str, repo: &str, issue_number: &str) -> Client {
+    pub fn new(token: &str, owner: String, repo: String, issue_number: String) -> Client {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert(
             "Accept",
@@ -51,10 +51,10 @@ impl Client {
             });
 
         Client {
-            owner: String::from(owner),
-            repo: String::from(repo),
-            issue_number: String::from(issue_number),
-            client: client,
+            owner,
+            repo,
+            issue_number,
+            client,
         }
     }
 
