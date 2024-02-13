@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let source_issue = source::SourceIssue::parse(&args.issue_url)?;
 
     let client = client::Client::new(
-        &token,
+        token,
         source_issue.owner,
         source_issue.repo,
         source_issue.issue_number,

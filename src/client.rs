@@ -20,7 +20,7 @@ pub struct Issue {
 
 impl Client {
     pub fn new(
-        token: &str,
+        token: String,
         owner: String,
         repo: String,
         issue_number: String,
