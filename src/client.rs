@@ -13,9 +13,10 @@ pub struct Comment {
 }
 
 #[derive(serde::Serialize)]
-pub struct Issue {
+pub struct Issue<'a> {
     pub title: String,
     pub body: String,
+    pub labels: Option<Vec<&'a str>>,
 }
 
 impl Client {
